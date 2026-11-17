@@ -624,11 +624,18 @@ export default {
 
     // Handle HEAD requests gracefully for health checkers / curl -I
     if (request.method === 'HEAD') {
-      if (path === '/' || path === '' || path === '/mcp' || path === '/.well-known/mcp.json') {
+      if (
+        path === '/' ||
+        path === '' ||
+        path === '/mcp' ||
+        path === '/.well-known/mcp.json' ||
+        path === '/.well-known/glama.json' ||
+        path === '/mcp/.well-known/glama.json'
+      ) {
         return new Response(null, {
           status: 200,
           headers: {
-            'Content-Type': path === '/mcp' ? 'application/json' : (path === '/' ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'),
+            'Content-Type': path === '/' ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8',
             ...CORS_HEADERS
           }
         });
@@ -707,6 +714,28 @@ export default {
                 "url": "https://mcp.holidayexplore.com/mcp"
               }
             ]
+          },
+          null,
+          2
+        ),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600',
+            ...CORS_HEADERS
+          }
+        }
+      );
+    }
+
+    // Glama MCP Connector Ownership Claim: GET /.well-known/glama.json and GET /mcp/.well-known/glama.json
+    if (path === '/.well-known/glama.json' || path === '/mcp/.well-known/glama.json') {
+      return new Response(
+        JSON.stringify(
+          {
+            "$schema": "https://glama.ai/mcp/schemas/connector.json",
+            "claim": "glama_claim_EI_JxGBcSxwBe756w-qRnoTF6Uv2TPze"
           },
           null,
           2
