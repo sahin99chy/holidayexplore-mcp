@@ -13,9 +13,9 @@ const API_BASE = 'https://holidayexplore.com/api/v1';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, HEAD, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Mcp-Session-Id, Last-Event-ID',
-  'Access-Control-Expose-Headers': 'Mcp-Session-Id',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept, Mcp-Session-Id, Mcp-Protocol-Version, MCP-Protocol-Version, Mcp-Method, Mcp-Name',
+  'Access-Control-Expose-Headers': 'Mcp-Session-Id, MCP-Protocol-Version',
   'Access-Control-Max-Age': '86400'
 };
 
@@ -806,20 +806,44 @@ export default {
         enableJsonResponse: true
       });
 
-      await server.connect(transport);
-      const res = await transport.handleRequest(reqToHandle);
+      try {
+        await server.connect(transport);
+        const res = await transport.handleRequest(reqToHandle);
 
-      // Append CORS headers to the response
-      const responseHeaders = new Headers(res.headers);
-      for (const [key, value] of Object.entries(CORS_HEADERS)) {
-        responseHeaders.set(key, value);
+        // Append CORS headers to the response
+        const responseHeaders = new Headers(res.headers);
+        for (const [key, value] of Object.entries(CORS_HEADERS)) {
+          responseHeaders.set(key, value);
+        }
+
+        return new Response(res.body, {
+          status: res.status,
+          statusText: res.statusText,
+          headers: responseHeaders
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify(
+            {
+              jsonrpc: '2.0',
+              error: {
+                code: -32603,
+                message: err.message || 'Internal MCP server error'
+              },
+              id: null
+            },
+            null,
+            2
+          ),
+          {
+            status: 500,
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              ...CORS_HEADERS
+            }
+          }
+        );
       }
-
-      return new Response(res.body, {
-        status: res.status,
-        statusText: res.statusText,
-        headers: responseHeaders
-      });
     }
 
     // 404 fallback for any other route
