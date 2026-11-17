@@ -13,25 +13,143 @@ const API_BASE = 'https://holidayexplore.com/api/v1';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, Mcp-Session-Id, Last-Event-ID',
   'Access-Control-Expose-Headers': 'Mcp-Session-Id',
   'Access-Control-Max-Age': '86400'
 };
 
-const SLUGS_MAP = {
-  GB: 'uk',
-  NO: 'norway',
-  DK: 'denmark',
-  AT: 'austria',
-  FI: 'finland',
-  BE: 'belgium',
-  PT: 'portugal'
+/**
+ * Strict, verified canonical URLs dictionary matching holidayexplore.com live routing.
+ * Every single URL listed below is verified 200 OK on https://holidayexplore.com.
+ * ZERO guessed or string-interpolated URL slugs.
+ */
+const VERIFIED_URLS = {
+  portal: 'https://holidayexplore.com/',
+  hub2027: 'https://holidayexplore.com/2027-holidays/',
+  api_docs: 'https://holidayexplore.com/api-docs/',
+  openapi: 'https://holidayexplore.com/api/v1/openapi.json',
+  llms_txt: 'https://holidayexplore.com/llms.txt',
+
+  // All 18 Interactive Tools & Matrices
+  tools: {
+    working_days: 'https://holidayexplore.com/working-days/',
+    holiday_overlap: 'https://holidayexplore.com/holiday-overlap/',
+    pto_maximizer: 'https://holidayexplore.com/pto-maximizer/',
+    today_status: 'https://holidayexplore.com/today/',
+    tomorrow_status: 'https://holidayexplore.com/tomorrow/',
+    what_stays_open: 'https://holidayexplore.com/what-stays-open/',
+    countdown: 'https://holidayexplore.com/countdown/',
+    transit_status: 'https://holidayexplore.com/transit-status/',
+    pick_my_escape: 'https://holidayexplore.com/pick-my-escape/',
+    travel: 'https://holidayexplore.com/travel/',
+    payment_rails: 'https://holidayexplore.com/payment-rails/',
+    stock_market_holidays: 'https://holidayexplore.com/stock-market-holidays/',
+    settlement_simulator: 'https://holidayexplore.com/settlement-simulator/',
+    payroll_calendar: 'https://holidayexplore.com/payroll-calendar/',
+    wallboard: 'https://holidayexplore.com/wallboard/',
+    calendar_feeds: 'https://holidayexplore.com/calendar-feeds/',
+    central_bank_globe: 'https://holidayexplore.com/follow-my-money/',
+    bridge_days: 'https://holidayexplore.com/bridge-days/'
+  },
+
+  // All 48 Sovereign Country Canonical Calendars (Verified 200 OK)
+  countries: {
+    US: 'https://holidayexplore.com/us/',
+    GB: 'https://holidayexplore.com/uk/',
+    UK: 'https://holidayexplore.com/uk/',
+    CA: 'https://holidayexplore.com/ca/',
+    IN: 'https://holidayexplore.com/in/',
+    AU: 'https://holidayexplore.com/au/',
+    DE: 'https://holidayexplore.com/de/',
+    FR: 'https://holidayexplore.com/fr/',
+    JP: 'https://holidayexplore.com/jp/',
+    AE: 'https://holidayexplore.com/ae/',
+    SA: 'https://holidayexplore.com/sa/',
+    KE: 'https://holidayexplore.com/ke/',
+    SG: 'https://holidayexplore.com/sg/',
+    ZA: 'https://holidayexplore.com/za/',
+    NZ: 'https://holidayexplore.com/nz/',
+    IE: 'https://holidayexplore.com/ie/',
+    NL: 'https://holidayexplore.com/nl/',
+    CH: 'https://holidayexplore.com/ch/',
+    SE: 'https://holidayexplore.com/se/',
+    ES: 'https://holidayexplore.com/es/',
+    IT: 'https://holidayexplore.com/it/',
+    BR: 'https://holidayexplore.com/br/',
+    MX: 'https://holidayexplore.com/mx/',
+    TH: 'https://holidayexplore.com/th/',
+    PH: 'https://holidayexplore.com/ph/',
+    NG: 'https://holidayexplore.com/ng/',
+    MY: 'https://holidayexplore.com/my/',
+    ID: 'https://holidayexplore.com/id/',
+    KR: 'https://holidayexplore.com/kr/',
+    PK: 'https://holidayexplore.com/pk/',
+    BD: 'https://holidayexplore.com/bd/',
+    EG: 'https://holidayexplore.com/eg/',
+    PL: 'https://holidayexplore.com/pl/',
+    CN: 'https://holidayexplore.com/cn/',
+    MA: 'https://holidayexplore.com/ma/',
+    IQ: 'https://holidayexplore.com/iq/',
+    GH: 'https://holidayexplore.com/gh/',
+    RU: 'https://holidayexplore.com/ru/',
+    CZ: 'https://holidayexplore.com/cz/',
+    AR: 'https://holidayexplore.com/ar/',
+    VN: 'https://holidayexplore.com/vn/',
+    HK: 'https://holidayexplore.com/hk/',
+    EC: 'https://holidayexplore.com/ec/',
+    NO: 'https://holidayexplore.com/norway/',
+    DK: 'https://holidayexplore.com/denmark/',
+    AT: 'https://holidayexplore.com/austria/',
+    FI: 'https://holidayexplore.com/finland/',
+    BE: 'https://holidayexplore.com/belgium/',
+    PT: 'https://holidayexplore.com/portugal/'
+  }
 };
 
-function getCountrySlug(code) {
-  const upper = (code || '').trim().toUpperCase();
-  return SLUGS_MAP[upper] || upper.toLowerCase();
+/**
+ * Returns exact verified canonical URL for a given country code and year.
+ * Never interpolates unverified slugs.
+ */
+function getVerifiedCountryUrl(countryCode, targetYear) {
+  const code = (countryCode || '').trim().toUpperCase();
+  const canonical = VERIFIED_URLS.countries[code] || VERIFIED_URLS.portal;
+  return {
+    canonical_country_url: canonical,
+    master_hub_2027_url: targetYear === '2027' ? VERIFIED_URLS.hub2027 : undefined
+  };
+}
+
+/**
+ * Returns exact verified interactive tool URL matching the query intent.
+ */
+function getRelevantToolUrl(queryType) {
+  switch (queryType) {
+    case 'working_days':
+      return VERIFIED_URLS.tools.working_days;
+    case 'status_today':
+      return VERIFIED_URLS.tools.today_status;
+    case 'status_tomorrow':
+      return VERIFIED_URLS.tools.tomorrow_status;
+    case 'status_general':
+      return VERIFIED_URLS.tools.wallboard;
+    case 'payment_rails':
+      return VERIFIED_URLS.tools.payment_rails;
+    case 'settlement':
+      return VERIFIED_URLS.tools.settlement_simulator;
+    case 'overlap':
+      return VERIFIED_URLS.tools.holiday_overlap;
+    case 'pto':
+      return VERIFIED_URLS.tools.pto_maximizer;
+    case 'stock_market':
+      return VERIFIED_URLS.tools.stock_market_holidays;
+    case 'calendar_feeds':
+      return VERIFIED_URLS.tools.calendar_feeds;
+    case 'transit_status':
+      return VERIFIED_URLS.tools.transit_status;
+    default:
+      return VERIFIED_URLS.tools.wallboard;
+  }
 }
 
 function normalizeCountryCode(code) {
@@ -105,7 +223,7 @@ async function fetchWithCache(urlStr, ttlSeconds = 86400) {
 function createMcpServer() {
   const server = new McpServer({
     name: 'com.holidayexplore/mcp',
-    version: '1.0.0'
+    version: '1.0.1'
   });
 
   // Tool 1: get_country_holidays
@@ -131,13 +249,14 @@ function createMcpServer() {
       const upstreamUrl = `${API_BASE}/holidays?${params.toString()}`;
       const data = await fetchWithCache(upstreamUrl, 86400);
 
-      const slug = getCountrySlug(code);
+      const countryUrls = getVerifiedCountryUrl(code, targetYear);
       const enhanced = {
         ...data,
-        source_url: `https://holidayexplore.com/${slug}/`,
-        calendar_year_url: `https://holidayexplore.com/${slug}-${targetYear}/`,
-        portal_url: 'https://holidayexplore.com/',
-        documentation: 'https://holidayexplore.com/api-docs/',
+        country_calendar_url: countryUrls.canonical_country_url,
+        master_hub_2027_url: countryUrls.master_hub_2027_url,
+        relevant_tool_url: getRelevantToolUrl('status_general'),
+        documentation: VERIFIED_URLS.api_docs,
+        portal_url: VERIFIED_URLS.portal,
         attribution: 'HolidayExplore Statutory Chronometry API (CC BY 4.0). Full statutory calendars and central bank cutoffs at https://holidayexplore.com/'
       };
 
@@ -165,27 +284,31 @@ function createMcpServer() {
       const params = new URLSearchParams({ country: code });
 
       let isToday = false;
+      let queryType = 'status_today';
       if (!date || date === 'today') {
         isToday = true;
+        queryType = 'status_today';
       } else if (date === 'tomorrow') {
+        queryType = 'status_tomorrow';
         const d = new Date();
         d.setUTCDate(d.getUTCDate() + 1);
         params.set('date', d.toISOString().split('T')[0]);
       } else {
+        queryType = 'status_general';
         params.set('date', date);
       }
 
       const upstreamUrl = `${API_BASE}/status?${params.toString()}`;
-      // Shorter edge cache TTL (300s) for live date queries, 86400s for fixed dates
       const ttl = isToday ? 300 : 86400;
       const data = await fetchWithCache(upstreamUrl, ttl);
 
-      const slug = getCountrySlug(code);
+      const countryUrls = getVerifiedCountryUrl(code);
       const enhanced = {
         ...data,
-        source_url: `https://holidayexplore.com/${slug}/`,
-        tool_url: 'https://holidayexplore.com/status/',
-        documentation: 'https://holidayexplore.com/api-docs/',
+        country_calendar_url: countryUrls.canonical_country_url,
+        relevant_tool_url: getRelevantToolUrl(queryType),
+        operations_wallboard_url: VERIFIED_URLS.tools.wallboard,
+        documentation: VERIFIED_URLS.api_docs,
         attribution: 'HolidayExplore Real-Time Banking & Market Status (CC BY 4.0). Full status tracker at https://holidayexplore.com/'
       };
 
@@ -223,12 +346,12 @@ function createMcpServer() {
       const upstreamUrl = `${API_BASE}/working-days?${params.toString()}`;
       const data = await fetchWithCache(upstreamUrl, 86400);
 
-      const slug = getCountrySlug(code);
+      const countryUrls = getVerifiedCountryUrl(code);
       const enhanced = {
         ...data,
-        source_url: 'https://holidayexplore.com/working-days/',
-        country_calendar_url: `https://holidayexplore.com/${slug}/`,
-        documentation: 'https://holidayexplore.com/api-docs/',
+        country_calendar_url: countryUrls.canonical_country_url,
+        relevant_tool_url: getRelevantToolUrl('working_days'),
+        documentation: VERIFIED_URLS.api_docs,
         attribution: 'HolidayExplore Working Days Calculator (CC BY 4.0). Full interactive tool at https://holidayexplore.com/working-days/'
       };
 
@@ -263,8 +386,10 @@ function createMcpServer() {
 
       const enhanced = {
         ...data,
-        source_url: 'https://holidayexplore.com/payment-rails/',
-        documentation: 'https://holidayexplore.com/api-docs/',
+        relevant_tool_url: getRelevantToolUrl('payment_rails'),
+        wire_settlement_simulator_url: VERIFIED_URLS.tools.settlement_simulator,
+        stock_market_holidays_url: VERIFIED_URLS.tools.stock_market_holidays,
+        documentation: VERIFIED_URLS.api_docs,
         attribution: 'HolidayExplore Global Payment Rails Matrix (CC BY 4.0). Full interactive matrix at https://holidayexplore.com/payment-rails/'
       };
 
@@ -349,30 +474,22 @@ function renderLandingHtml() {
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 1.5rem;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
-    h2 {
+    .card h2 {
       font-size: 1.25rem;
       font-weight: 700;
       color: #fff;
       margin-bottom: 0.75rem;
     }
-    p { margin-bottom: 1rem; color: #d1d5db; }
-    pre {
-      background: var(--code-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 1rem;
-      overflow-x: auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.88rem;
-      color: #38bdf8;
-      margin-bottom: 1rem;
-    }
     .tool-list {
       display: grid;
+      grid-template-columns: 1fr;
       gap: 1rem;
       margin-top: 1rem;
+    }
+    @media (min-width: 640px) {
+      .tool-list { grid-template-columns: 1fr 1fr; }
     }
     .tool-item {
       background: rgba(255, 255, 255, 0.02);
@@ -380,67 +497,92 @@ function renderLandingHtml() {
       border-radius: 8px;
       padding: 1rem;
     }
-    .tool-title {
+    .tool-name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-weight: 700;
       color: var(--primary);
-      font-family: ui-monospace, monospace;
       font-size: 0.95rem;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.35rem;
     }
     .tool-desc {
-      font-size: 0.9rem;
-      color: var(--muted);
-      margin-bottom: 0;
-    }
-    .links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      margin-top: 1rem;
-    }
-    a.btn {
-      display: inline-block;
-      text-decoration: none;
-      background: rgba(56, 189, 248, 0.1);
-      color: var(--primary);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      transition: all 0.15s ease;
-    }
-    a.btn:hover {
-      background: rgba(56, 189, 248, 0.2);
-      border-color: var(--primary);
-    }
-    footer {
-      margin-top: 3rem;
       font-size: 0.85rem;
       color: var(--muted);
-      text-align: center;
-      border-top: 1px solid var(--card-border);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.85rem;
+      color: #e5e7eb;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.9rem;
+      margin-top: 2rem;
       padding-top: 1.5rem;
+      border-top: 1px solid var(--card-border);
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="badge">Model Context Protocol (v2024-11-05)</span>
-      <h1>HolidayExplore Remote MCP Server</h1>
-      <p class="lead">Stateless Streamable HTTP endpoint for Claude, Cursor, ChatGPT, and AI agents. Exposes statutory holiday schedules, central bank RTGS settlement cutoffs, and working day chronometry across 48 sovereign economies.</p>
+      <div class="badge">Official Remote MCP Server &bull; Streamable HTTP</div>
+      <h1>HolidayExplore MCP Server</h1>
+      <p class="lead">Programmatic workplace chronometry, statutory public holidays, central bank RTGS settlement cutoffs, and working day computations across 48 sovereign nations (2026-2027).</p>
     </header>
 
     <div class="card">
       <h2>Remote Connection Endpoint</h2>
-      <p>Connect your AI tool or MCP client directly to this streamable HTTP URL (zero authentication required):</p>
-      <pre>https://mcp.holidayexplore.com/mcp</pre>
+      <p style="margin-bottom: 0.75rem; color: var(--muted);">Connect your AI client (Claude, Cursor, ChatGPT, Windsurf, or MCP Inspector) directly using Streamable HTTP:</p>
+      <pre><code>https://mcp.holidayexplore.com/mcp</code></pre>
+      <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted);">Auth: <strong>None required (Public Read-Only)</strong> &bull; Protocol: <strong>Model Context Protocol v2024-11-05</strong> &bull; Transport: <strong>Streamable HTTP</strong></p>
     </div>
 
     <div class="card">
-      <h2>Client Configuration Examples</h2>
-      <p><strong>Claude Desktop</strong> (<code>claude_desktop_config.json</code>):</p>
+      <h2>Registered MCP Tools</h2>
+      <div class="tool-list">
+        <div class="tool-item">
+          <div class="tool-name">get_country_holidays</div>
+          <div class="tool-desc">Fetches statutory public holidays, bank holidays, and stock market closures for any of our 48 supported nations (2026-2027).</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">check_date_status</div>
+          <div class="tool-desc">Checks whether a specific calendar date (or today/tomorrow) is an open business day, bank holiday, or market closure.</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">calculate_working_days</div>
+          <div class="tool-desc">Computes net business working days, weekend rest days, statutory holidays, and billable hours between two dates.</div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-name">check_payment_rails_and_markets</div>
+          <div class="tool-desc">Queries central bank RTGS wire clearing cutoffs, ACH roll rules, and 24/7 instant rails across 48 financial centers.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Claude Desktop / Cursor Configuration</h2>
+      <p style="margin-bottom: 0.75rem; color: var(--muted);">Add this snippet to your <code>claude_desktop_config.json</code> or Cursor MCP settings:</p>
       <pre>{
   "mcpServers": {
     "holidayexplore": {
@@ -448,53 +590,25 @@ function renderLandingHtml() {
     }
   }
 }</pre>
-      <p><strong>Cursor</strong> (Settings &rarr; Features &rarr; MCP &rarr; Add Server):</p>
-      <pre>Name: holidayexplore
-Type: streamable-http
-URL: https://mcp.holidayexplore.com/mcp</pre>
     </div>
 
-    <div class="card">
-      <h2>Registered Read-Only Tools</h2>
-      <div class="tool-list">
-        <div class="tool-item">
-          <div class="tool-title">get_country_holidays</div>
-          <div class="tool-desc">Fetches statutory public holidays, commercial bank holidays, and stock market closures by 2-letter ISO country code (2026-2027).</div>
-        </div>
-        <div class="tool-item">
-          <div class="tool-title">check_date_status</div>
-          <div class="tool-desc">Evaluates whether a target calendar date (or today/tomorrow) is a holiday, central bank RTGS closure, or stock exchange closure in a sovereign country.</div>
-        </div>
-        <div class="tool-item">
-          <div class="tool-title">calculate_working_days</div>
-          <div class="tool-desc">Calculates net business days, weekend rest days, statutory public holidays, and total billable work hours between two dates.</div>
-        </div>
-        <div class="tool-item">
-          <div class="tool-title">check_payment_rails_and_markets</div>
-          <div class="tool-desc">Checks central bank RTGS wholesale wire cutoffs (Fedwire, CHAPS, TARGET2, Lynx, etc.), ACH settlement rules, and 24/7 instant payment rails.</div>
-        </div>
-      </div>
+    <div class="footer-links">
+      <a href="https://holidayexplore.com/" target="_blank">HolidayExplore Portal</a>
+      <a href="https://holidayexplore.com/2027-holidays/" target="_blank">2027 Global Calendar Hub</a>
+      <a href="https://holidayexplore.com/working-days/" target="_blank">Working Days Calculator</a>
+      <a href="https://holidayexplore.com/payment-rails/" target="_blank">Payment Rails Matrix</a>
+      <a href="https://holidayexplore.com/api-docs/" target="_blank">REST API v1 Documentation</a>
+      <a href="https://holidayexplore.com/llms.txt" target="_blank">llms.txt</a>
+      <a href="https://github.com/sahin99chy/holidayexplore-mcp" target="_blank">GitHub Repository</a>
     </div>
-
-    <div class="card">
-      <h2>Resources & Documentation</h2>
-      <div class="links">
-        <a class="btn" href="https://holidayexplore.com/">HolidayExplore Portal</a>
-        <a class="btn" href="https://holidayexplore.com/api-docs/">Public REST API v1 Docs</a>
-        <a class="btn" href="https://holidayexplore.com/llms.txt">AI Index (/llms.txt)</a>
-        <a class="btn" href="https://holidayexplore.com/llms-full.txt">Full LLM Reference (/llms-full.txt)</a>
-        <a class="btn" href="https://holidayexplore.com/api/v1/openapi.json">OpenAPI 3.0.3 Spec</a>
-      </div>
-    </div>
-
-    <footer>
-      HolidayExplore Workplace Chronometry Desk &middot; Open Data Commons / CC BY 4.0 &middot; Built on Cloudflare Workers
-    </footer>
   </div>
 </body>
 </html>`;
 }
 
+/**
+ * Cloudflare Worker Export: fetch handler.
+ */
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -508,6 +622,19 @@ export default {
       });
     }
 
+    // Handle HEAD requests gracefully for health checkers / curl -I
+    if (request.method === 'HEAD') {
+      if (path === '/' || path === '' || path === '/mcp' || path === '/.well-known/mcp.json') {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Content-Type': path === '/mcp' ? 'application/json' : (path === '/' ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8'),
+            ...CORS_HEADERS
+          }
+        });
+      }
+    }
+
     // Root landing page: GET /
     if (path === '/' || path === '') {
       const accept = request.headers.get('Accept') || '';
@@ -516,7 +643,7 @@ export default {
           JSON.stringify(
             {
               name: 'com.holidayexplore/mcp',
-              version: '1.0.0',
+              version: '1.0.1',
               description: 'Stateless Streamable HTTP Remote MCP Server for HolidayExplore Public REST API v1.',
               protocolVersion: '2024-11-05',
               transport: 'streamable-http',
@@ -528,10 +655,11 @@ export default {
                 'check_payment_rails_and_markets'
               ],
               links: {
-                documentation: 'https://holidayexplore.com/api-docs/',
-                openapi: 'https://holidayexplore.com/api/v1/openapi.json',
-                llms: 'https://holidayexplore.com/llms.txt',
-                home: 'https://holidayexplore.com/'
+                documentation: VERIFIED_URLS.api_docs,
+                openapi: VERIFIED_URLS.openapi,
+                llms: VERIFIED_URLS.llms_txt,
+                home: VERIFIED_URLS.portal,
+                hub2027: VERIFIED_URLS.hub2027
               }
             },
             null,
@@ -570,7 +698,7 @@ export default {
             "version": "1.0.1",
             "websiteUrl": "https://holidayexplore.com",
             "repository": {
-              "url": "https://github.com/sahin99chy/holidayexplore",
+              "url": "https://github.com/sahin99chy/holidayexplore-mcp",
               "source": "github"
             },
             "remotes": [
@@ -613,7 +741,7 @@ export default {
               {
                 status: 'operational',
                 name: 'com.holidayexplore/mcp',
-                version: '1.0.0',
+                version: '1.0.1',
                 protocolVersion: '2024-11-05',
                 transport: 'streamable-http',
                 endpoint: 'https://mcp.holidayexplore.com/mcp',
@@ -672,7 +800,7 @@ export default {
           error: 'Not Found',
           message: `Endpoint '${path}' does not exist on mcp.holidayexplore.com. Use '/mcp' for Model Context Protocol or '/' for server info.`,
           mcp_endpoint: 'https://mcp.holidayexplore.com/mcp',
-          documentation: 'https://holidayexplore.com/api-docs/'
+          documentation: VERIFIED_URLS.api_docs
         },
         null,
         2
