@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "holidayexplore-mcp",
+  "main": "src/index.js",
+  "compatibility_date": "2026-02-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "mcp.holidayexplore.com",
+      "custom_domain": true
+    }
+  ]
+}
