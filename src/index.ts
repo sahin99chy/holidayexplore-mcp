@@ -640,7 +640,9 @@ export default {
         path === '/mcp' ||
         path === '/.well-known/mcp.json' ||
         path === '/.well-known/glama.json' ||
-        path === '/mcp/.well-known/glama.json'
+        path === '/mcp/.well-known/glama.json' ||
+        path === '/.well-known/mcptry-verify.txt' ||
+        path === '/mcp/.well-known/mcptry-verify.txt'
       ) {
         return new Response(null, {
           status: 200,
@@ -768,6 +770,18 @@ export default {
           }
         }
       );
+    }
+
+    // mcptry Server Ownership Claim: GET /.well-known/mcptry-verify.txt and GET /mcp/.well-known/mcptry-verify.txt
+    if (path === '/.well-known/mcptry-verify.txt' || path === '/mcp/.well-known/mcptry-verify.txt') {
+      return new Response('mcptry-verify=-KQjmVFgyMOWTYjLHft70_5psiDzsZQU\n', {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          ...CORS_HEADERS
+        }
+      });
     }
 
     // MCP Streamable HTTP endpoint: /mcp
