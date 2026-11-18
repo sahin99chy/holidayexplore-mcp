@@ -2,6 +2,7 @@
 
 [![Official MCP Registry](https://img.shields.io/badge/MCP%20Registry-com.holidayexplore%2Fmcp-blue.svg)](https://registry.modelcontextprotocol.io/v0.1/servers?search=holidayexplore)
 [![Remote MCP Transport](https://img.shields.io/badge/Transport-Streamable%20HTTP-success.svg)](https://mcp.holidayexplore.com/mcp)
+[![mcptry](https://mcptry.com/badge/com.holidayexplore/mcp)](https://mcptry.com/servers/com.holidayexplore/mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Official Model Context Protocol (MCP) Remote Server for [HolidayExplore](https://holidayexplore.com).
