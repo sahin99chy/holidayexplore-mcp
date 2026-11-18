@@ -1,6 +1,6 @@
 {
   "name": "holidayexplore-mcp",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "HolidayExplore Remote MCP Server (Streamable HTTP)",
   "main": "src/index.js",
   "type": "module",

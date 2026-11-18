@@ -3,7 +3,16 @@
   "name": "com.holidayexplore/mcp",
   "title": "HolidayExplore Global Banking & Chronometry MCP Server",
   "description": "Global statutory holidays, RTGS payment cutoffs, and working days across 48 countries (2026-2027).",
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "icons": [
+    {
+      "src": "https://holidayexplore.com/logo-mark.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "any"
+      ]
+    }
+  ],
   "websiteUrl": "https://holidayexplore.com",
   "repository": {
     "url": "https://github.com/sahin99chy/holidayexplore-mcp",

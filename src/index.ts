@@ -223,8 +223,14 @@ async function fetchWithCache(urlStr, ttlSeconds = 86400) {
 function createMcpServer() {
   const server = new McpServer({
     name: 'com.holidayexplore/mcp',
-    version: '1.0.1'
+    version: '1.0.2'
   });
+
+  const READ_ONLY_ANNOTATIONS = {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true
+  };
 
   // Tool 1: get_country_holidays
   server.tool(
@@ -236,6 +242,7 @@ function createMcpServer() {
       month: z.number().int().min(1).max(12).optional().describe('Optional month number (1-12) to filter holidays.'),
       type: z.enum(['bank', 'statutory', 'public', 'all']).optional().describe('Holiday classification filter. Defaults to all.')
     },
+    READ_ONLY_ANNOTATIONS,
     async ({ country, year, month, type }) => {
       const code = normalizeCountryCode(country);
       const targetYear = year || '2026';
@@ -279,6 +286,7 @@ function createMcpServer() {
       country: z.string().describe('ISO 3166-1 alpha-2 country code (e.g. US, GB, DE, IN, JP, SG).'),
       date: z.string().optional().describe('Target calendar date in YYYY-MM-DD format, or relative keywords "today" or "tomorrow". Defaults to "today".')
     },
+    READ_ONLY_ANNOTATIONS,
     async ({ country, date }) => {
       const code = normalizeCountryCode(country);
       const params = new URLSearchParams({ country: code });
@@ -333,6 +341,7 @@ function createMcpServer() {
       end_date: z.string().describe('Range end date in YYYY-MM-DD format.'),
       hours_per_day: z.number().positive().max(24).optional().describe('Standard working hours per day. Defaults to 8.0.')
     },
+    READ_ONLY_ANNOTATIONS,
     async ({ country, start_date, end_date, hours_per_day }) => {
       const code = normalizeCountryCode(country);
       const standardHours = hours_per_day || 8.0;
@@ -375,6 +384,7 @@ function createMcpServer() {
       region: z.string().optional().describe('Optional geographic region filter (e.g. Europe, Americas, Asia-Pacific, Middle East, Africa).'),
       rail: z.string().optional().describe('Optional payment rail filter (e.g. SEPA, Fedwire, ACH, RTP, PIX, CHAPS, BACS, TARGET2).')
     },
+    READ_ONLY_ANNOTATIONS,
     async ({ country, region, rail }) => {
       const params = new URLSearchParams();
       if (country) params.set('search', country);
@@ -650,7 +660,7 @@ export default {
           JSON.stringify(
             {
               name: 'com.holidayexplore/mcp',
-              version: '1.0.1',
+              version: '1.0.2',
               description: 'Stateless Streamable HTTP Remote MCP Server for HolidayExplore Public REST API v1.',
               protocolVersion: '2024-11-05',
               transport: 'streamable-http',
@@ -702,7 +712,16 @@ export default {
             "name": "com.holidayexplore/mcp",
             "title": "HolidayExplore Global Banking & Chronometry MCP Server",
             "description": "Global statutory holidays, RTGS payment cutoffs, and working days across 48 countries (2026-2027).",
-            "version": "1.0.1",
+            "version": "1.0.2",
+            "icons": [
+              {
+                "src": "https://holidayexplore.com/logo-mark.png",
+                "mimeType": "image/png",
+                "sizes": [
+                  "any"
+                ]
+              }
+            ],
             "websiteUrl": "https://holidayexplore.com",
             "repository": {
               "url": "https://github.com/sahin99chy/holidayexplore-mcp",
@@ -770,7 +789,7 @@ export default {
               {
                 status: 'operational',
                 name: 'com.holidayexplore/mcp',
-                version: '1.0.1',
+                version: '1.0.2',
                 protocolVersion: '2024-11-05',
                 transport: 'streamable-http',
                 endpoint: 'https://mcp.holidayexplore.com/mcp',
